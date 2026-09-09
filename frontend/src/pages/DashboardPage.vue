@@ -50,8 +50,14 @@ function fmtUptime(sec) {
 
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ t('dashboard.title') }}</h1>
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ t('dashboard.title') }}</h1>
+      <span class="text-xs px-3 py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 rounded-full font-semibold">
+        🟢 Sistem Canlı
+      </span>
+    </div>
 
+    <!-- Stats -->
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       <StatCard :title="t('dashboard.activeStreams')" :value="stats?.totals?.activeStreams ?? '—'" accent="green">
         <template #icon>▶</template>
@@ -67,6 +73,49 @@ function fmtUptime(sec) {
       </StatCard>
     </div>
 
+    <!-- Usage Guide Banner -->
+    <div class="card bg-gradient-to-r from-slate-900 to-slate-800 text-white space-y-4 shadow-lg border-none">
+      <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+        <h2 class="font-bold text-lg flex items-center gap-2 text-white">
+          <span>📖</span> Hızlı Kullanım Kılavuzu & Bağlantılar
+        </h2>
+        <span class="text-xs text-brand-300 bg-brand-950/80 px-2.5 py-1 rounded-full font-medium">IPTV & Kamera Rehberi</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+        <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/50 space-y-2">
+          <div class="font-semibold text-emerald-400 text-sm flex items-center gap-1.5">
+            <span>📺</span> IPTV & TV Uygulama Bağlantısı
+          </div>
+          <p class="text-slate-300">Tüm kanalları Smart TV, IPTV Smarters, TiviMate veya VLC'de izlemek için bu M3U linkini ekleyin:</p>
+          <div class="bg-slate-950 p-2 rounded text-emerald-300 font-mono text-[11px] select-all break-all border border-slate-800">
+            https://stream.homaklab.com/api/v1/m3u/public.m3u
+          </div>
+        </div>
+
+        <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/50 space-y-2">
+          <div class="font-semibold text-amber-400 text-sm flex items-center gap-1.5">
+            <span>📹</span> IP Kamera (RTSP) Ekleme
+          </div>
+          <p class="text-slate-300">Hikvision, Dahua veya herhangi bir IP kamerayı eklemek için Kaynak Tipi <strong>rtsp</strong> seçin:</p>
+          <div class="bg-slate-950 p-2 rounded text-amber-300 font-mono text-[11px] select-all break-all border border-slate-800">
+            rtsp://admin:sifre@192.168.1.100:554/Streaming/Channels/101
+          </div>
+        </div>
+
+        <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/50 space-y-2">
+          <div class="font-semibold text-sky-400 text-sm flex items-center gap-1.5">
+            <span>🎬</span> YouTube & Ekran Yakalama
+          </div>
+          <p class="text-slate-300">YouTube linklerini veya sunucu ekranını canlı yayına alabilirsiniz:</p>
+          <div class="bg-slate-950 p-2 rounded text-sky-300 font-mono text-[11px] select-all break-all border border-slate-800">
+            https://www.youtube.com/watch?v=VIDEO_ID
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrics -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" v-if="metrics">
       <div class="card">
         <div class="label">{{ t('dashboard.cpu') }}</div>
@@ -92,6 +141,7 @@ function fmtUptime(sec) {
       </div>
     </div>
 
+    <!-- Logs & Alerts -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <div class="card">
         <h2 class="font-semibold mb-3">{{ t('dashboard.recentAlerts') }}</h2>
