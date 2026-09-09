@@ -13,6 +13,8 @@ import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { IsArray, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import * as http from 'http';
+import * as https from 'https';
 import { Repository } from 'typeorm';
 import { PERMISSIONS } from '../../common/permissions';
 import { M3uImport } from '../../database/entities/media.entities';
@@ -20,6 +22,49 @@ import { Channel, ChannelOutput } from '../../database/entities/streaming.entiti
 import { AuthUser, CurrentUser, Public, RequirePermissions } from '../auth/decorators';
 import { buildUdpUrl } from '../ffmpeg/ffmpeg-builder';
 import { parseM3u, sourceTypeForUrl } from './m3u-parser';
+
+async function fetchPlaylistContent(urlStr: string): Promise<string> {
+  try {
+    const res = await fetch(urlStr, {
+      signal: AbortSignal.timeout(60_000),
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
+        'Accept': '*/*',
+      },
+    });
+    if (res.ok) return await res.text();
+  } catch {}
+
+  return new Promise((resolve, reject) => {
+    const client = urlStr.startsWith('https') ? https : http;
+    const req = client.get(
+      urlStr,
+      {
+        rejectUnauthorized: false,
+        headers: { 'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18', 'Accept': '*/*' },
+        timeout: 60_000,
+      },
+      (res) => {
+        if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          return resolve(fetchPlaylistContent(res.headers.location));
+        }
+        if (res.statusCode && res.statusCode >= 400) {
+          return reject(new Error(`HTTP ${res.statusCode}`));
+        }
+        let data = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () => resolve(data));
+      },
+    );
+    req.on('error', (err) => reject(err));
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Bağlantı Zaman Aşımı (Timeout)'));
+    });
+  });
+}
 
 class ImportM3uDto {
   @IsIn(['url', 'content', 'xtream']) source: 'url' | 'content' | 'xtream';
@@ -57,15 +102,9 @@ export class M3uService {
     if (dto.source === 'url') {
       if (!dto.url) throw new BadRequestException('url required');
       try {
-        const res = await fetch(dto.url, {
-          signal: AbortSignal.timeout(60_000),
-          headers: { 'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18' }
-        });
-        if (!res.ok) throw new BadRequestException(`IPTV Sunucu Hatası: HTTP ${res.status}`);
-        content = await res.text();
+        content = await fetchPlaylistContent(dto.url);
       } catch (err: any) {
-        if (err instanceof BadRequestException) throw err;
-        throw new BadRequestException(`IPTV Sunucusuna Bağlanılamadı (${err?.message || 'Bağlantı zaman aşımı'}). Adres, kullanıcı adı ve şifreyi kontrol edin.`);
+        throw new BadRequestException(`IPTV Sunucusuna Bağlanılamadı (${err?.message || 'Bağlantı hatası'}). Lütfen sunucu adresinizi, kullanıcı adınızı ve şifrenizi kontrol edin.`);
       }
     }
     const entries = parseM3u(content);
