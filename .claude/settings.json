@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python deploy-vds14.py*)",
+      "Bash(cd C:\\Users\\Administrator\\Desktop\\udp && python deploy-vds14.py*)"
+    ]
+  }
+}

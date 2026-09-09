@@ -1,0 +1,135 @@
+name: multicast-control-panel
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mcp_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-mcp}
+      POSTGRES_USER: ${DB_USER:-mcp}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Published on loopback only so the host-networked worker can reach it.
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-mcp} -d ${DB_NAME:-mcp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [mcp]
+
+  redis:
+    image: redis:7-alpine
+    container_name: mcp_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD required}"]
+    volumes:
+      - redisdata:/data
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [mcp]
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    image: mcp/app:latest
+    container_name: mcp_app
+    restart: unless-stopped
+    command: ["node", "dist/main.js"]
+    env_file: .env
+    environment:
+      SERVICE_ROLE: api
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      RUN_MIGRATIONS: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ${STORAGE_PATH:-./data/media}:/data/media
+      - ${HLS_PATH:-./data/hls}:/data/hls
+      - ${BACKUP_PATH:-./data/backups}:/data/backups
+    networks: [mcp]
+
+  worker:
+    image: mcp/app:latest
+    container_name: mcp_worker
+    restart: unless-stopped
+    command: ["node", "dist/worker.main.js"]
+    env_file: .env
+    environment:
+      SERVICE_ROLE: worker
+      # Host network: reach postgres/redis via loopback-published ports.
+      DB_HOST: 127.0.0.1
+      DB_PORT: ${DB_PORT:-15432}
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: ${REDIS_PORT:-16379}
+    # Host networking is required for UDP multicast egress on the real
+    # LAN interface and for `localaddr=` interface selection. Linux only.
+    network_mode: host
+    depends_on:
+      app:
+        condition: service_started
+    volumes:
+      - ${STORAGE_PATH:-./data/media}:/data/media
+      - ${HLS_PATH:-./data/hls}:/data/hls
+
+  scheduler:
+    image: mcp/app:latest
+    container_name: mcp_scheduler
+    restart: unless-stopped
+    command: ["node", "dist/scheduler.main.js"]
+    env_file: .env
+    environment:
+      SERVICE_ROLE: scheduler
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    depends_on:
+      app:
+        condition: service_started
+    volumes:
+      - ${BACKUP_PATH:-./data/backups}:/data/backups
+      - ${STORAGE_PATH:-./data/media}:/data/media
+    networks: [mcp]
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    image: mcp/nginx:latest
+    container_name: mcp_nginx
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    environment:
+      SSL_MODE: ${SSL_MODE:-none}
+    volumes:
+      - ${HLS_PATH:-./data/hls}:/data/hls:ro
+      - ${SSL_CERT_PATH:-./docker/nginx/certs}:/etc/nginx/certs:ro
+    depends_on:
+      app:
+        condition: service_started
+    networks: [mcp]
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  mcp:
+    driver: bridge

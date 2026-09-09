@@ -1,0 +1,7 @@
+.env
+node_modules/
+dist/
+data/
+docker/nginx/certs/*.pem
+*.log
+.DS_Store
