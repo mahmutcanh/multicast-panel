@@ -6,6 +6,7 @@
 #                                       (NOTE: restarts cloudflared -> a few seconds of
 #                                        downtime for ALL services on tunnel adcda483)
 import json
+import os
 import sys
 import urllib.request
 

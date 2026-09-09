@@ -17,7 +17,7 @@ import { Repository } from 'typeorm';
 import { PERMISSIONS } from '../../common/permissions';
 import { M3uImport } from '../../database/entities/media.entities';
 import { Channel, ChannelOutput } from '../../database/entities/streaming.entities';
-import { AuthUser, CurrentUser, RequirePermissions } from '../auth/decorators';
+import { AuthUser, CurrentUser, Public, RequirePermissions } from '../auth/decorators';
 import { buildUdpUrl } from '../ffmpeg/ffmpeg-builder';
 import { parseM3u, sourceTypeForUrl } from './m3u-parser';
 
@@ -99,7 +99,7 @@ export class M3uService {
 
   async exportM3u(): Promise<string> {
     const channels = await this.channels.find({ order: { priority: 'DESC', name: 'ASC' } });
-    const base = this.config.get<string>('hlsBaseUrl');
+    const base = this.config.get<string>('hlsBaseUrl') || this.config.get<string>('publicUrl') || 'https://stream.homaklab.com';
     const iface = this.config.get<string>('multicastInterfaceIp') ?? '';
     const lines = ['#EXTM3U'];
     for (const ch of channels) {
@@ -157,6 +157,14 @@ export class M3uController {
   @RequirePermissions(PERMISSIONS.M3U_IMPORT)
   history() {
     return this.service.history();
+  }
+
+  @Public()
+  @Get('public.m3u')
+  @Header('Content-Type', 'audio/x-mpegurl')
+  @Header('Content-Disposition', 'inline; filename="iptv-playlist.m3u"')
+  async exportPublic() {
+    return this.service.exportM3u();
   }
 
   @Get('export')
