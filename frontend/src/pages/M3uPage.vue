@@ -18,7 +18,8 @@ const importForm = ref({
   xtreamHost: '',
   xtreamUser: '',
   xtreamPass: '',
-  udpBaseIp: '230.121.0.1'
+  udpBaseIp: '230.121.0.1',
+  outputTypes: ['udp', 'hls', 'http']
 });
 const history = ref([]);
 const importing = ref(false);
@@ -123,6 +124,25 @@ async function download(format, filename) {
         </div>
       </div>
 
+      <!-- Automatic Output Selection -->
+      <div class="p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+        <label class="label text-xs font-bold text-slate-700 dark:text-slate-300">⚡ Çözülen Tüm Kanallar İçin Otomatik Oluşturulacak Çıktılar (Çoklu Yayın):</label>
+        <div class="flex flex-wrap gap-5 text-xs">
+          <label class="flex items-center gap-1.5 cursor-pointer font-medium text-emerald-600 dark:text-emerald-400">
+            <input v-model="importForm.outputTypes" value="udp" type="checkbox" class="rounded text-emerald-600" />
+            <span>📡 UDP Multicast (Otel TV Ağı)</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer font-medium text-brand-600 dark:text-brand-400">
+            <input v-model="importForm.outputTypes" value="hls" type="checkbox" class="rounded text-brand-600" />
+            <span>🌐 HLS / M3U8 (İnternet / Web / Mobil)</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer font-medium text-sky-600 dark:text-sky-400">
+            <input v-model="importForm.outputTypes" value="http" type="checkbox" class="rounded text-sky-600" />
+            <span>🔗 HTTP Stream (MPEG-TS Akışı)</span>
+          </label>
+        </div>
+      </div>
+
       <!-- Xtream Form -->
       <div v-if="importForm.source === 'xtream'" class="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
         <div class="flex items-center justify-between">
@@ -148,7 +168,7 @@ async function download(format, filename) {
         <div class="flex items-center justify-between pt-1">
           <label class="flex items-center gap-2 text-xs text-slate-500 cursor-pointer">
             <input v-model="rememberAccount" type="checkbox" class="rounded text-brand-600" />
-            <span>Giriş bilgilerimi hatırla ve kayıtlı tut (Her seferinde tekrar girmeyin)</span>
+            <span>Giriş bilgilerimi hatırla ve kayıtlı tut</span>
           </label>
           <p class="text-[11px] text-slate-400">
             💡 Panel <code>get.php?username=...&password=...&type=m3u_plus</code> bağlantısını otomatik kurar.

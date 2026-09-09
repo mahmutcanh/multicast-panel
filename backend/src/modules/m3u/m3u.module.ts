@@ -12,7 +12,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
-import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsArray, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 import { Repository } from 'typeorm';
 import { PERMISSIONS } from '../../common/permissions';
 import { M3uImport } from '../../database/entities/media.entities';
@@ -30,6 +30,7 @@ class ImportM3uDto {
   @IsOptional() @IsString() xtreamPass?: string;
   // fill free multicast targets starting from this base
   @IsOptional() @IsString() udpBaseIp?: string;
+  @IsOptional() @IsArray() outputTypes?: string[];
 }
 
 @Injectable()
@@ -80,6 +81,7 @@ export class M3uService {
       }
     };
 
+    const selectedOutputs = dto.outputTypes && dto.outputTypes.length > 0 ? dto.outputTypes : ['udp', 'hls'];
     let created = 0;
     for (const entry of entries) {
       const target = nextTarget();
@@ -94,9 +96,21 @@ export class M3uService {
           udpIp: target.ip,
           udpPort: target.port,
           copyMode: true,
+          autoStart: true,
+          autoRestart: true,
         }),
       );
-      await this.outputs.save(this.outputs.create({ channelId: channel.id, type: 'udp', enabled: true }));
+      for (const ot of selectedOutputs) {
+        await this.outputs.save(
+          this.outputs.create({
+            channelId: channel.id,
+            type: ot as any,
+            enabled: true,
+            publicEnabled: true,
+            tokenRequired: false,
+          }),
+        );
+      }
       created++;
     }
     return this.imports.save(
