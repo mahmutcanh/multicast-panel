@@ -9,6 +9,8 @@ const { t } = useI18n();
 const auth = useAuthStore();
 const ui = useUiStore();
 
+const rememberAccount = ref(true);
+
 const importForm = ref({
   source: 'xtream',
   url: '',
@@ -26,11 +28,22 @@ async function load() {
     history.value = await call(api.get('/m3u/imports')).catch(() => []);
   }
 }
-onMounted(load);
+
+onMounted(async () => {
+  importForm.value.xtreamHost = localStorage.getItem('mcp_xtream_host') || '';
+  importForm.value.xtreamUser = localStorage.getItem('mcp_xtream_user') || '';
+  importForm.value.xtreamPass = localStorage.getItem('mcp_xtream_pass') || '';
+  await load();
+});
 
 async function doImport() {
   importing.value = true;
   try {
+    if (importForm.value.source === 'xtream' && rememberAccount.value) {
+      if (importForm.value.xtreamHost) localStorage.setItem('mcp_xtream_host', importForm.value.xtreamHost);
+      if (importForm.value.xtreamUser) localStorage.setItem('mcp_xtream_user', importForm.value.xtreamUser);
+      if (importForm.value.xtreamPass) localStorage.setItem('mcp_xtream_pass', importForm.value.xtreamPass);
+    }
     const payload = { ...importForm.value };
     if (payload.source === 'url') delete payload.content;
     const res = await call(api.post('/m3u/import', payload));
@@ -41,6 +54,16 @@ async function doImport() {
   } finally {
     importing.value = false;
   }
+}
+
+function clearSavedAccount() {
+  localStorage.removeItem('mcp_xtream_host');
+  localStorage.removeItem('mcp_xtream_user');
+  localStorage.removeItem('mcp_xtream_pass');
+  importForm.value.xtreamHost = '';
+  importForm.value.xtreamUser = '';
+  importForm.value.xtreamPass = '';
+  ui.toast('Kaydedilmiş hesap bilgileri temizlendi.');
 }
 
 async function download(format, filename) {
@@ -102,7 +125,12 @@ async function download(format, filename) {
 
       <!-- Xtream Form -->
       <div v-if="importForm.source === 'xtream'" class="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
-        <div class="font-bold text-xs text-brand-600 dark:text-brand-400">IPTV Satın Aldığınız Sağlayıcı Bilgileri (Xtream Codes)</div>
+        <div class="flex items-center justify-between">
+          <div class="font-bold text-xs text-brand-600 dark:text-brand-400">IPTV Satın Aldığınız Sağlayıcı Bilgileri (Xtream Codes)</div>
+          <button v-if="importForm.xtreamHost || importForm.xtreamUser" type="button" class="text-xs text-red-500 hover:underline" @click="clearSavedAccount">
+            🗑️ Kayıtlı Hesabı Temizle
+          </button>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <label class="label text-xs">IPTV Sunucu Adresi (Host:Port) *</label>
@@ -117,9 +145,15 @@ async function download(format, filename) {
             <input v-model="importForm.xtreamPass" type="password" class="input text-xs font-mono" placeholder="••••••••" />
           </div>
         </div>
-        <p class="text-[11px] text-slate-400">
-          💡 Panel otomatik olarak <code>get.php?username=...&password=...&type=m3u_plus</code> bağlantısını kurup tüm kanalları çözer.
-        </p>
+        <div class="flex items-center justify-between pt-1">
+          <label class="flex items-center gap-2 text-xs text-slate-500 cursor-pointer">
+            <input v-model="rememberAccount" type="checkbox" class="rounded text-brand-600" />
+            <span>Giriş bilgilerimi hatırla ve kayıtlı tut (Her seferinde tekrar girmeyin)</span>
+          </label>
+          <p class="text-[11px] text-slate-400">
+            💡 Panel <code>get.php?username=...&password=...&type=m3u_plus</code> bağlantısını otomatik kurar.
+          </p>
+        </div>
       </div>
 
       <!-- URL Form -->
