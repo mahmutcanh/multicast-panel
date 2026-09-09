@@ -74,43 +74,61 @@ function fmtUptime(sec) {
     </div>
 
     <!-- Usage Guide Banner -->
-    <div class="card bg-gradient-to-r from-slate-900 to-slate-800 text-white space-y-4 shadow-lg border-none">
+    <div class="card bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white space-y-4 shadow-xl border-none p-5">
       <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
-        <h2 class="font-bold text-lg flex items-center gap-2 text-white">
-          <span>📖</span> Hızlı Kullanım Kılavuzu & Bağlantılar
-        </h2>
-        <span class="text-xs text-brand-300 bg-brand-950/80 px-2.5 py-1 rounded-full font-medium">IPTV & Kamera Rehberi</span>
+        <div>
+          <h2 class="font-bold text-lg flex items-center gap-2 text-white">
+            <span>📖</span> Hızlı Kullanım & Yayın Kılavuzu
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">Kanalları oluşturma, IPTV oynatıcılarına bağlama ve PC ekranını yayınlama adımları.</p>
+        </div>
+        <span class="text-xs text-brand-300 bg-brand-950/80 border border-brand-800 px-3 py-1 rounded-full font-medium">Rehber v1.2</span>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 text-xs">
+        <!-- Card 1 -->
         <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/50 space-y-2">
           <div class="font-semibold text-emerald-400 text-sm flex items-center gap-1.5">
-            <span>📺</span> IPTV & TV Uygulama Bağlantısı
+            <span>📺</span> 1. IPTV & Smart TV İzleme
           </div>
-          <p class="text-slate-300">Tüm kanalları Smart TV, IPTV Smarters, TiviMate veya VLC'de izlemek için bu M3U linkini ekleyin:</p>
+          <p class="text-slate-300">Smart TV, IPTV Smarters veya VLC'ye tüm kanalları otomatik yüklemek için bu M3U linkini ekleyin:</p>
           <div class="bg-slate-950 p-2 rounded text-emerald-300 font-mono text-[11px] select-all break-all border border-slate-800">
             https://stream.homaklab.com/api/v1/m3u/public.m3u
           </div>
         </div>
 
+        <!-- Card 2 -->
         <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/50 space-y-2">
           <div class="font-semibold text-amber-400 text-sm flex items-center gap-1.5">
-            <span>📹</span> IP Kamera (RTSP) Ekleme
+            <span>📹</span> 2. IP Kamera (RTSP) Ekleme
           </div>
-          <p class="text-slate-300">Hikvision, Dahua veya herhangi bir IP kamerayı eklemek için Kaynak Tipi <strong>rtsp</strong> seçin:</p>
+          <p class="text-slate-300">Hikvision / Dahua güvenlik kameralarını eklemek için Kaynak Tipi <strong>rtsp</strong> seçin:</p>
           <div class="bg-slate-950 p-2 rounded text-amber-300 font-mono text-[11px] select-all break-all border border-slate-800">
-            rtsp://admin:sifre@192.168.1.100:554/Streaming/Channels/101
+            rtsp://admin:sifre@192.168.1.100:554/live
           </div>
         </div>
 
+        <!-- Card 3 -->
         <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/50 space-y-2">
           <div class="font-semibold text-sky-400 text-sm flex items-center gap-1.5">
-            <span>🎬</span> YouTube & Ekran Yakalama
+            <span>🎬</span> 3. YouTube Canlı Yayın
           </div>
-          <p class="text-slate-300">YouTube linklerini veya sunucu ekranını canlı yayına alabilirsiniz:</p>
+          <p class="text-slate-300">Kaynak Tipi <strong>youtube</strong> seçip doğrudan link yapıştırın:</p>
           <div class="bg-slate-950 p-2 rounded text-sky-300 font-mono text-[11px] select-all break-all border border-slate-800">
-            https://www.youtube.com/watch?v=VIDEO_ID
+            https://www.youtube.com/watch?v=2l7XOjbOyQY
           </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/50 space-y-2">
+          <div class="font-semibold text-purple-400 text-sm flex items-center gap-1.5">
+            <span>💻</span> 4. Kendi Bilgisayar Ekranını Yayınlama
+          </div>
+          <p class="text-slate-300">OBS Studio ile <strong>Ekran Yakalama</strong> ekleyin. Yayın sunucusu RTMP:</p>
+          <div class="bg-slate-950 p-2 rounded text-purple-300 font-mono text-[11px] select-all break-all border border-slate-800">
+            rtmp://stream.homaklab.com/live/pc-ekranim
+          </div>
+          <p class="text-[10px] text-slate-400">Panelde Kaynak Tipi <strong>rtmp</strong>, URL: <code>rtmp://127.0.0.1/live/pc-ekranim</code> seçin.</p>
         </div>
       </div>
     </div>

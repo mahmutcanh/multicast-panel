@@ -22,9 +22,12 @@ import { buildUdpUrl } from '../ffmpeg/ffmpeg-builder';
 import { parseM3u, sourceTypeForUrl } from './m3u-parser';
 
 class ImportM3uDto {
-  @IsIn(['url', 'content']) source: 'url' | 'content';
+  @IsIn(['url', 'content', 'xtream']) source: 'url' | 'content' | 'xtream';
   @IsOptional() @IsString() @MaxLength(2000) url?: string;
   @IsOptional() @IsString() content?: string;
+  @IsOptional() @IsString() xtreamHost?: string;
+  @IsOptional() @IsString() xtreamUser?: string;
+  @IsOptional() @IsString() xtreamPass?: string;
   // fill free multicast targets starting from this base
   @IsOptional() @IsString() udpBaseIp?: string;
 }
@@ -40,9 +43,19 @@ export class M3uService {
 
   async import(dto: ImportM3uDto, userId: string) {
     let content = dto.content ?? '';
+    if (dto.source === 'xtream') {
+      if (!dto.xtreamHost || !dto.xtreamUser || !dto.xtreamPass) {
+        throw new BadRequestException('Xtream IPTV sunucu adresi, kullanıcı adı ve şifresi zorunludur.');
+      }
+      let host = dto.xtreamHost.trim();
+      if (!/^https?:\/\//i.test(host)) host = `http://${host}`;
+      host = host.replace(/\/+$/, '');
+      dto.url = `${host}/get.php?username=${encodeURIComponent(dto.xtreamUser.trim())}&password=${encodeURIComponent(dto.xtreamPass.trim())}&type=m3u_plus&output=ts`;
+      dto.source = 'url';
+    }
     if (dto.source === 'url') {
       if (!dto.url) throw new BadRequestException('url required');
-      const res = await fetch(dto.url, { signal: AbortSignal.timeout(30_000) });
+      const res = await fetch(dto.url, { signal: AbortSignal.timeout(60_000) });
       if (!res.ok) throw new BadRequestException(`Fetch failed: HTTP ${res.status}`);
       content = await res.text();
     }
