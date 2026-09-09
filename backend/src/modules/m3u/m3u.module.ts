@@ -56,9 +56,17 @@ export class M3uService {
     }
     if (dto.source === 'url') {
       if (!dto.url) throw new BadRequestException('url required');
-      const res = await fetch(dto.url, { signal: AbortSignal.timeout(60_000) });
-      if (!res.ok) throw new BadRequestException(`Fetch failed: HTTP ${res.status}`);
-      content = await res.text();
+      try {
+        const res = await fetch(dto.url, {
+          signal: AbortSignal.timeout(60_000),
+          headers: { 'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18' }
+        });
+        if (!res.ok) throw new BadRequestException(`IPTV Sunucu Hatası: HTTP ${res.status}`);
+        content = await res.text();
+      } catch (err: any) {
+        if (err instanceof BadRequestException) throw err;
+        throw new BadRequestException(`IPTV Sunucusuna Bağlanılamadı (${err?.message || 'Bağlantı zaman aşımı'}). Adres, kullanıcı adı ve şifreyi kontrol edin.`);
+      }
     }
     const entries = parseM3u(content);
     if (entries.length === 0) throw new BadRequestException('No channels found in M3U');

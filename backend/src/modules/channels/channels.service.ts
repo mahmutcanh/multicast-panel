@@ -53,6 +53,7 @@ export class ChannelsService {
     await this.assertUdpTargetFree(dto.udpIp, dto.udpPort);
 
     const { outputs, ...fields } = dto;
+    if (fields.copyMode === undefined) fields.copyMode = true;
     const channel = await this.channels.save(this.channels.create(fields as Partial<Channel>));
     await this.saveOutputs(channel.id, outputs);
     return this.channels.findOneOrFail({ where: { id: channel.id } });
