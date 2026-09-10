@@ -23,10 +23,12 @@ import { AuthUser, CurrentUser, Public, RequirePermissions } from '../auth/decor
 import { buildUdpUrl } from '../ffmpeg/ffmpeg-builder';
 import { parseM3u, sourceTypeForUrl } from './m3u-parser';
 
+const FETCH_TIMEOUT_MS = 20_000; // keep well under Cloudflare's ~100s edge timeout
+
 async function fetchPlaylistContent(urlStr: string): Promise<string> {
   try {
     const res = await fetch(urlStr, {
-      signal: AbortSignal.timeout(60_000),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       redirect: 'follow',
       headers: {
         'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
@@ -43,25 +45,28 @@ async function fetchPlaylistContent(urlStr: string): Promise<string> {
       {
         rejectUnauthorized: false,
         headers: { 'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18', 'Accept': '*/*' },
-        timeout: 60_000,
+        timeout: FETCH_TIMEOUT_MS,
       },
       (res) => {
         if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          req.destroy();
           return resolve(fetchPlaylistContent(res.headers.location));
         }
         if (res.statusCode && res.statusCode >= 400) {
+          req.destroy();
           return reject(new Error(`HTTP ${res.statusCode}`));
         }
         let data = '';
         res.setEncoding('utf8');
         res.on('data', (chunk) => (data += chunk));
         res.on('end', () => resolve(data));
+        res.on('error', (err) => reject(err));
       },
     );
-    req.on('error', (err) => reject(err));
+    req.on('error', (err) => reject(new Error(err?.message || 'Bağlantı hatası')));
     req.on('timeout', () => {
       req.destroy();
-      reject(new Error('Bağlantı Zaman Aşımı (Timeout)'));
+      reject(new Error('IPTV sunucusu zamanında yanıt vermedi (Timeout)'));
     });
   });
 }

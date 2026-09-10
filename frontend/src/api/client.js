@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const api = axios.create({ baseURL: '/api/v1' });
+export const api = axios.create({ baseURL: '/api/v1', timeout: 40000 });
 
 let accessToken = localStorage.getItem('mcp_token') || '';
 let refreshing = null;
@@ -59,7 +59,12 @@ export async function call(promise) {
     const res = await promise;
     return res.data?.data ?? res.data;
   } catch (err) {
-    const message = err.response?.data?.error || err.message || 'Request failed';
+    let message = err.response?.data?.error || err.message || 'Request failed';
+    if (!err.response) {
+      message = err.code === 'ECONNABORTED'
+        ? 'IPTV sunucusu zamanında yanıt vermedi (Timeout). Sunucu adresini kontrol edin.'
+        : 'Sunucuya bağlanılamadı (Network Error). İnternet bağlantınızı veya sunucu durumunu kontrol edin.';
+    }
     throw new Error(message);
   }
 }
